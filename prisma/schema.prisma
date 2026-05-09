@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Bảng hiện có của bạn (Bảo toàn dữ liệu) ──
+model quotes {
+  id       Int    @id @default(autoincrement())
+  text     String
+  author   String
+  category String
+}
+
+// ── Trạng thái xử lý webhook ──
+enum WebhookStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+// ── Bảng lưu raw data từ Pancake (Step 3) ──
+model WebhookRawEvent {
+  id               String        @id @default(uuid())
+  externalEventId  String?       @unique @map("external_event_id") // Idempotency key (Step 5)
+  source           String        @default("pancake")
+  eventType        String        @map("event_type")                // e.g. order_created, customer_updated
+  payload          Json                                              // JSONB raw payload
+  receivedAt       DateTime      @default(now()) @map("received_at")
+  status           WebhookStatus @default(PENDING)
+  errorLog         String?       @map("error_log")
+  processingTimeMs Int?          @map("processing_time_ms")         // Response time tracking (Step 6)
+
+  @@map("webhook_raw_events")
+}
+
+// ══════════════════════════════════════
+//  PHASE 2: Business Models
+// ══════════════════════════════════════
+
+// ── Khách hàng ──
+model Customer {
+  id                  String    @id @default(uuid())
+  pancakeCustomerId   String?   @unique @map("pancake_customer_id") // ID từ Pancake
+  fullName            String    @map("full_name")
+  phoneNumber         String?   @map("phone_number")
+  email               String?
+  address             String?
+  fullAddress         String?   @map("full_address")
+  provinceId          String?   @map("province_id")
+  districtId          String?   @map("district_id")
+  communeId           String?   @map("commune_id")
+  provinceName        String?   @map("province_name")
+  districtName        String?   @map("district_name")
+  communeName         String?   @map("commune_name")
+  source              String?   // Nguồn khách: facebook, shopee, etc.
+  rawData             Json?     @map("raw_data")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  orders              Order[]
+
+  @@map("customers")
+}
+
+// ── Đơn hàng ──
+model Order {
+  id                  String    @id @default(uuid())
+  pancakeOrderId      Int       @unique @map("pancake_order_id")  // system_id từ Pancake
+  customerId          String?   @map("customer_id")
+  statusCode          Int?      @map("status_code")               // 0=pending, 1=confirmed, 2=shipping, 3=delivered, -1=cancelled
+  statusName          String?   @map("status_name")               // delivered, pending, cancelled...
+  totalPrice          Float?    @map("total_price")
+  shippingFee         Float?    @map("shipping_fee")
+  totalDiscount       Float?    @map("total_discount")
+  totalQuantity       Int?      @map("total_quantity")
+  moneyToCollect      Float?    @map("money_to_collect")          // Tiền thu hộ (COD)
+  orderSource         String?   @map("order_source")              // Shopee, Facebook, Lazada...
+  orderSourceId       String?   @map("order_source_id")           // marketplace_id
+  orderLink           String?   @map("order_link")                // Link xem đơn trên Pancake
+  shippingAddress     Json?     @map("shipping_address")          // Địa chỉ giao hàng đầy đủ
+  warehouseInfo       Json?     @map("warehouse_info")            // Thông tin kho
+  billFullName        String?   @map("bill_full_name")
+  billPhoneNumber     String?   @map("bill_phone_number")
+  note                String?
+  partnerFee          Float?    @map("partner_fee")               // Phí vận chuyển đối tác
+  feeMarketplace      Float?    @map("fee_marketplace")           // Phí sàn TMĐT
+  pancakeCreatedAt    DateTime? @map("pancake_created_at")        // inserted_at từ Pancake
+  pancakeUpdatedAt    DateTime? @map("pancake_updated_at")        // updated_at từ Pancake
+  rawData             Json?     @map("raw_data")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  customer            Customer? @relation(fields: [customerId], references: [id])
+  items               OrderItem[]
+
+  @@map("orders")
+}
+
+// ── Chi tiết sản phẩm trong đơn ──
+model OrderItem {
+  id                  String    @id @default(uuid())
+  orderId             String    @map("order_id")
+  productName         String?   @map("product_name")
+  sku                 String?
+  quantity            Int?      @default(1)
+  price               Float?
+  discount            Float?    @default(0)
+  variationInfo       Json?     @map("variation_info")            // Phân loại: size, màu...
+  rawData             Json?     @map("raw_data")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  order               Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
