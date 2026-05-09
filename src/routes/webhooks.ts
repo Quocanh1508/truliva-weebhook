@@ -126,5 +126,15 @@ router.post(
     }
   }
 );
+import { syncProducts } from '../scripts/syncProducts';
+
+router.get('/sync-products', async (req: Request, res: Response): Promise<void> => {
+  try {
+    syncProducts().catch(err => logger.error('Sync failed', err));
+    res.status(200).json({ message: 'Sync process started in the background.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;

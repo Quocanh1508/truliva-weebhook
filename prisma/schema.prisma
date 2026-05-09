@@ -119,3 +119,25 @@ model OrderItem {
 
   @@map("order_items")
 }
+
+// ── Danh mục sản phẩm (Product Catalog) ──
+model Product {
+  id                  String    @id @default(uuid())
+  pancakeProductId    String?   @unique @map("pancake_product_id") // ID sản phẩm từ Pancake
+  sku                 String?   // Mã SP (ví dụ: 21141212)
+  name                String    // Tên sản phẩm
+  category            String?   // Danh mục (Device, Filter, etc.)
+  imageUrl            String?   @map("image_url")
+  costPrice           Float?    @map("cost_price")                 // Giá nhập cuối
+  sellingPrice        Float?    @map("selling_price")               // Giá bán
+  availableStock      Int?      @map("available_stock")             // Có thể bán
+  totalImported       Int?      @map("total_imported")              // Tổng nhập
+  totalStock          Int?      @map("total_stock")                 // Tổng tồn kho
+  isActive            Boolean   @default(true) @map("is_active")
+  variations          Json?     // Phân loại (size, màu, v.v.)
+  rawData             Json?     @map("raw_data")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("products")
+}
