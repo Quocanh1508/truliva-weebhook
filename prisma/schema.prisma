@@ -6,13 +6,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// ── Bảng hiện có của bạn (Bảo toàn dữ liệu) ──
-model quotes {
-  id       Int    @id @default(autoincrement())
-  text     String
-  author   String
-  category String
-}
 
 // ── Trạng thái xử lý webhook ──
 enum WebhookStatus {
