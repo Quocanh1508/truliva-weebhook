@@ -56,15 +56,20 @@ async function processEventAsync(rawEventId: string, eventType: string, payload:
  *   2. Nếu eventType là hành động (create/update) → kiểm tra payload
  *   3. Kiểm tra các trường đặc trưng: system_id → order, id (UUID) → customer
  */
-function detectEventCategory(eventType: string, payload: any): 'order' | 'customer' | 'unknown' {
+function detectEventCategory(eventType: string, payload: any): 'order' | 'customer' | 'product' | 'unknown' {
   const normalized = eventType.toLowerCase().trim();
 
-  // ── Nhóm rõ ràng từ tên event ──
-  if (normalized === 'orders' || normalized === 'order' || normalized === 'order_created') {
+  // ── Nhóm rõ ràng từ tên event hoặc payload.type ──
+  const payloadType = (payload.type || '').toLowerCase();
+  
+  if (normalized === 'orders' || normalized === 'order' || normalized === 'order_created' || payloadType === 'orders') {
     return 'order';
   }
-  if (normalized === 'customers' || normalized === 'customer') {
+  if (normalized === 'customers' || normalized === 'customer' || payloadType === 'customers') {
     return 'customer';
+  }
+  if (normalized === 'products' || normalized === 'product' || payloadType === 'products') {
+    return 'product';
   }
 
   // ── Nhóm hành động: phân loại bằng nội dung payload ──
@@ -73,8 +78,9 @@ function detectEventCategory(eventType: string, payload: any): 'order' | 'custom
     return 'order';
   }
 
-  // Customer có id dạng UUID và full_name, nhưng không có system_id
-  if (payload.id && typeof payload.id === 'string' && payload.id.includes('-')) {
+  // Customer có id dạng UUID và thường có phone_numbers hoặc tên.
+  // Thêm điều kiện không phải là type products để tránh nhận diện nhầm.
+  if (payload.id && typeof payload.id === 'string' && payload.id.includes('-') && payloadType !== 'products' && payloadType !== 'product') {
     return 'customer';
   }
 
