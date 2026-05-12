@@ -87,11 +87,10 @@ const webappPath = path.join(__dirname, '..', 'webapp', 'dist');
 app.use(express.static(webappPath));
 
 // ── SPA fallback: mọi route không match API/webhook → index.html ──
-app.get('*', (req, res) => {
-  // Nếu request là API hoặc webhook thì trả 404 JSON
+app.use((req, res, next) => {
+  // Nếu request là API hoặc webhook thì bỏ qua (next)
   if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/') || req.path === '/health') {
-    res.status(404).json({ error: 'Not found' });
-    return;
+    return next();
   }
   res.sendFile(path.join(webappPath, 'index.html'));
 });
