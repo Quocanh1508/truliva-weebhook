@@ -17,6 +17,9 @@ import uploadRoutes from './routes/upload';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy (Render dùng reverse proxy HTTPS)
+app.set('trust proxy', 1);
+
 // ── Security middleware ──
 app.use(helmet({
   contentSecurityPolicy: false, // Cho phép load ảnh từ Cloudinary
@@ -83,14 +86,14 @@ app.use('/api/upload', uploadRoutes);
 const webappPath = path.join(__dirname, '..', 'webapp', 'dist');
 app.use(express.static(webappPath));
 
-// ── SPA fallback: mọi route không match → index.html ──
-app.get(/^\/app(\/.*)?$/, (_req, res) => {
+// ── SPA fallback: mọi route không match API/webhook → index.html ──
+app.get('*', (req, res) => {
+  // Nếu request là API hoặc webhook thì trả 404 JSON
+  if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/') || req.path === '/health') {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
   res.sendFile(path.join(webappPath, 'index.html'));
-});
-
-// ── 404 handler ──
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' });
 });
 
 // ── Global error handler ──
