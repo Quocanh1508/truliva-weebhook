@@ -22,7 +22,7 @@ app.set('trust proxy', 1);
 
 // ── Security middleware ──
 app.use(helmet({
-  contentSecurityPolicy: false, // Cho phép load ảnh từ Cloudinary
+  contentSecurityPolicy: false, // Cho phép load ảnh từ Cloudinary/Local
 }));
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? true : 'http://localhost:5173',
@@ -82,6 +82,9 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
 
+// ── Serve uploaded images ──
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // ── Serve webapp static files (production) ──
 const webappPath = path.join(__dirname, '..', 'webapp', 'dist');
 app.use(express.static(webappPath));
@@ -89,7 +92,7 @@ app.use(express.static(webappPath));
 // ── SPA fallback: mọi route không match API/webhook → index.html ──
 app.use((req, res, next) => {
   // Nếu request là API hoặc webhook thì bỏ qua (next)
-  if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/') || req.path === '/health') {
+  if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/') || req.path === '/health' || req.path.startsWith('/uploads/')) {
     return next();
   }
   res.sendFile(path.join(webappPath, 'index.html'));
@@ -116,7 +119,7 @@ app.listen(PORT, () => {
       'POST /webhooks/pancake',
       'POST /api/auth/login',
       'GET  /api/reports',
-      'GET  /app (webapp)',
+      'GET  /uploads',
     ],
   });
 });

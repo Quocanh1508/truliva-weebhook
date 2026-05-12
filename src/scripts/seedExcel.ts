@@ -60,8 +60,29 @@ async function run() {
       
       const serviceType = getCellString(row, 8) || 'Khác';
       
-      const imagesText = getCellString(row, 9);
-      const imageUrls = imagesText ? imagesText.split(',').map((s: string) => s.trim()).filter((s: string) => s.startsWith('http')) : [];
+      // Parse image URLs - handle richText, hyperlinks, and plain text
+      const imageCell = row.getCell(9);
+      let imageUrls: string[] = [];
+      if (imageCell && imageCell.value) {
+        let rawText = '';
+        const cellVal = imageCell.value as any;
+        if (typeof cellVal === 'string') {
+          rawText = cellVal;
+        } else if (cellVal.richText) {
+          rawText = cellVal.richText.map((rt: any) => rt.text).join('');
+        } else if (cellVal.text) {
+          if (typeof cellVal.text === 'string') {
+            rawText = cellVal.text;
+          } else if (cellVal.text.richText) {
+            rawText = cellVal.text.richText.map((rt: any) => rt.text).join('');
+          }
+        }
+        // Extract all URLs using regex
+        const urlMatches = rawText.match(/https?:\/\/[^\s,]+/g);
+        if (urlMatches) {
+          imageUrls = [...new Set(urlMatches.map((u: string) => u.trim()))]; // deduplicate
+        }
+      }
       
       const notes = getCellString(row, 10);
       const serialNumber = getCellString(row, 11);
@@ -91,7 +112,7 @@ async function run() {
           province,
           products,
           serviceType,
-          imageUrls: imageUrls.length > 0 ? imageUrls : ['https://via.placeholder.com/600x400?text=No+Image'],
+          imageUrls,
           notes: finalNotes,
           serialNumber,
           distanceKm,

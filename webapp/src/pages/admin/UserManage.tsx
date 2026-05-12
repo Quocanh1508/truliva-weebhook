@@ -99,7 +99,7 @@ export default function UserManage() {
       {loading ? (
         <div className="text-center py-10"><span className="spinner border-t-[#1B3A6B]"></span></div>
       ) : (
-        <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+        <div className="card table-container" style={{ padding: 0 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)' }}>

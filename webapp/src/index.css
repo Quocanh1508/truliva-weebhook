@@ -137,6 +137,35 @@ button {
 .text-sm { font-size: 0.875rem; }
 .font-bold { font-weight: 700; }
 
+/* Responsive Utilities */
+.nav-desktop {
+  display: none;
+}
+
+.menu-toggle {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .nav-desktop {
+    display: flex;
+  }
+  .menu-toggle {
+    display: none;
+  }
+}
+
+/* Table container for horizontal scroll */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-container table {
+  min-width: 600px; /* Ensure table doesn't squash too much */
+}
+
 /* Utilities */
 .w-full { width: 100%; }
 .h-screen { height: 100vh; }

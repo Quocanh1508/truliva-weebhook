@@ -32,7 +32,8 @@ export default function Layout() {
         <div className="container flex items-center justify-between" style={{ height: '64px' }}>
           <div className="flex items-center gap-2">
             <button 
-              style={{ padding: '8px', background: 'transparent', display: 'flex' }}
+              className="menu-toggle"
+              style={{ padding: '8px', background: 'transparent' }}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -40,8 +41,8 @@ export default function Layout() {
             <img src="/logo.png" alt="Truliva" style={{ height: '32px' }} />
           </div>
 
-          {/* Desktop Nav - basic display */}
-          <nav className="flex items-center gap-4" style={{ display: window.innerWidth > 768 ? 'flex' : 'none' }}>
+          {/* Desktop Nav */}
+          <nav className="nav-desktop items-center gap-4">
             {navItems.map((item) => (
               <Link
                 key={item.path}

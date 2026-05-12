@@ -1,21 +1,31 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
+import path from 'path';
+import fs from 'fs';
 import logger from '../utils/logger';
 import { requireAuth } from '../middleware/authSession';
 
 const router = Router();
 
-// Cấu hình Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+// Đảm bảo thư mục uploads tồn tại
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Cấu hình Multer lưu vào đĩa (diskStorage)
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
 });
 
-// Multer - lưu tạm trong memory
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -27,8 +37,17 @@ const upload = multer({
 });
 
 /**
+ * Lấy URL hoàn chỉnh cho ảnh
+ */
+const getImageUrl = (req: Request, filename: string) => {
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.get('host');
+  return `${protocol}://${host}/uploads/${filename}`;
+};
+
+/**
  * POST /api/upload
- * Upload 1 ảnh lên Cloudinary, trả về URL
+ * Upload 1 ảnh lên server cục bộ
  */
 router.post(
   '/',
@@ -41,38 +60,9 @@ router.post(
         return;
       }
 
-      // Kiểm tra nếu chưa cấu hình Cloudinary thì trả về URL mock
-      if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
-        logger.warn('Cloudinary chưa được cấu hình. Sử dụng URL ảnh mock.');
-        res.json({
-          url: 'https://via.placeholder.com/600x400?text=Mock+Image+Upload',
-          publicId: `mock_${Date.now()}`,
-        });
-        return;
-      }
-
-      // Upload buffer lên Cloudinary
-      const result = await new Promise<any>((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'truliva-ktv',
-            resource_type: 'image',
-            transformation: [
-              { width: 1200, height: 1200, crop: 'limit' }, // Resize tối đa 1200px
-              { quality: 'auto:good' },
-            ],
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-        uploadStream.end(req.file!.buffer);
-      });
-
       res.json({
-        url: result.secure_url,
-        publicId: result.public_id,
+        url: getImageUrl(req, req.file.filename),
+        publicId: req.file.filename,
       });
     } catch (error: any) {
       logger.error('Upload error', { error: error.message });
@@ -83,7 +73,7 @@ router.post(
 
 /**
  * POST /api/upload/multiple
- * Upload nhiều ảnh cùng lúc (tối đa 5)
+ * Upload nhiều ảnh cùng lúc
  */
 router.post(
   '/multiple',
@@ -97,37 +87,7 @@ router.post(
         return;
       }
 
-      // Kiểm tra nếu chưa cấu hình Cloudinary thì trả về URL mock
-      if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
-        logger.warn('Cloudinary chưa được cấu hình. Sử dụng URL ảnh mock (multiple).');
-        const urls = files.map((_, idx) => `https://via.placeholder.com/600x400?text=Mock+Image+${idx + 1}`);
-        res.json({ urls });
-        return;
-      }
-
-      const uploadPromises = files.map(
-        (file) =>
-          new Promise<any>((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              {
-                folder: 'truliva-ktv',
-                resource_type: 'image',
-                transformation: [
-                  { width: 1200, height: 1200, crop: 'limit' },
-                  { quality: 'auto:good' },
-                ],
-              },
-              (error, result) => {
-                if (error) reject(error);
-                else resolve(result);
-              }
-            );
-            uploadStream.end(file.buffer);
-          })
-      );
-
-      const results = await Promise.all(uploadPromises);
-      const urls = results.map((r) => r.secure_url);
+      const urls = files.map((file) => getImageUrl(req, file.filename));
 
       res.json({ urls });
     } catch (error: any) {
