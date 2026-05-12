@@ -5,14 +5,29 @@ dotenv.config();
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import path from 'path';
 import logger from './utils/logger';
 import webhookRoutes from './routes/webhooks';
+import authRoutes from './routes/auth';
+import reportRoutes from './routes/reports';
+import userRoutes from './routes/users';
+import uploadRoutes from './routes/upload';
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Security middleware ──
-app.use(helmet());
-app.use(cors());
+app.use(helmet({
+  contentSecurityPolicy: false, // Cho phép load ảnh từ Cloudinary
+}));
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? true : 'http://localhost:5173',
+  credentials: true,
+}));
+
+// ── Cookie parser ──
+app.use(cookieParser());
 
 // ── Parse JSON body (giới hạn 1MB để tránh payload quá lớn) ──
 app.use(express.json({ limit: '1mb' }));
@@ -58,6 +73,21 @@ app.get('/health', (_req, res) => {
 // ── Webhook routes (Step 2) ──
 app.use('/webhooks', webhookRoutes);
 
+// ── KTV Webapp API routes ──
+app.use('/api/auth', authRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// ── Serve webapp static files (production) ──
+const webappPath = path.join(__dirname, '..', 'webapp', 'dist');
+app.use(express.static(webappPath));
+
+// ── SPA fallback: mọi route không match → index.html ──
+app.get(/^\/app(\/.*)?$/, (_req, res) => {
+  res.sendFile(path.join(webappPath, 'index.html'));
+});
+
 // ── 404 handler ──
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
@@ -82,6 +112,9 @@ app.listen(PORT, () => {
     endpoints: [
       'GET  /health',
       'POST /webhooks/pancake',
+      'POST /api/auth/login',
+      'GET  /api/reports',
+      'GET  /app (webapp)',
     ],
   });
 });

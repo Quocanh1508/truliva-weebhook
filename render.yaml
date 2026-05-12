@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: truliva-ktv-webapp
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # Bạn sẽ điền biến này trên Dashboard Render
+      - key: PANCAKE_WEBHOOK_SECRET
+        sync: false
+      - key: PANCAKE_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import logger from '../utils/logger';
 
-// ── Khởi tạo Prisma Client ──
+// ── Khởi tạo Prisma Client với PG adapter ──
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 
