@@ -6,7 +6,30 @@ import { requireAuth, requireAdmin } from '../middleware/authSession';
 
 const router = Router();
 
-// Tất cả routes cần auth + admin
+// ==========================================
+// PUBLIC ROUTES (Dành cho mọi role đã login)
+// ==========================================
+
+/**
+ * GET /api/users/ktvs
+ * Lấy danh sách kỹ thuật viên (public cho authenticated users)
+ */
+router.get('/ktvs', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const ktvs = await prisma.user.findMany({
+      where: { role: 'KTV', isActive: true },
+      select: { id: true, fullName: true, username: true, phoneNumber: true }
+    });
+    res.json(ktvs);
+  } catch (error: any) {
+    logger.error('Fetch KTVs error', { error: error.message });
+    res.status(500).json({ error: 'Lỗi lấy danh sách KTV' });
+  }
+});
+
+// ==========================================
+// ADMIN ROUTES
+// ==========================================
 router.use(requireAuth, requireAdmin);
 
 /**

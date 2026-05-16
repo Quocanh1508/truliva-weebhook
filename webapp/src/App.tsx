@@ -7,11 +7,13 @@ import Layout from './components/Layout';
 // KTV Pages
 import ReportForm from './pages/ktv/ReportForm';
 import MyReports from './pages/ktv/MyReports';
+import MyOrders from './pages/ktv/MyOrders';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
 import ReportList from './pages/admin/ReportList';
 import UserManage from './pages/admin/UserManage';
+import OrderList from './pages/admin/OrderList';
 
 export default function App() {
   return (
@@ -25,6 +27,7 @@ export default function App() {
             <Route element={<ProtectedRoute allowedRoles={['KTV']} />}>
               <Route path="/ktv/report" element={<ReportForm />} />
               <Route path="/ktv/my-reports" element={<MyReports />} />
+              <Route path="/ktv/my-orders" element={<MyOrders />} />
             </Route>
 
             {/* Admin Routes */}
@@ -32,6 +35,7 @@ export default function App() {
               <Route path="/admin" element={<Dashboard />} />
               <Route path="/admin/reports" element={<ReportList />} />
               <Route path="/admin/users" element={<UserManage />} />
+              <Route path="/admin/orders" element={<OrderList />} />
             </Route>
           </Route>
 

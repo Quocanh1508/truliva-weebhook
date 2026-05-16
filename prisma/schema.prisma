@@ -83,6 +83,9 @@ model Order {
   feeMarketplace      Float?    @map("fee_marketplace")           // Phí sàn TMĐT
   pancakeCreatedAt    DateTime? @map("pancake_created_at")        // inserted_at từ Pancake
   pancakeUpdatedAt    DateTime? @map("pancake_updated_at")        // updated_at từ Pancake
+  appointmentTime     DateTime? @map("appointment_time")          // Thời gian hẹn khách
+  adminStatus         String?   @map("admin_status")              // Trạng thái đơn do Admin quản lý
+  assignedKtvId       String?   @map("assigned_ktv_id")           // KTV được phân công
   rawData             Json?     @map("raw_data")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
@@ -90,6 +93,8 @@ model Order {
   // Relations
   customer            Customer? @relation(fields: [customerId], references: [id])
   items               OrderItem[]
+  assignedKtv         User?     @relation(fields: [assignedKtvId], references: [id])
+  serviceReports      ServiceReport[]
 
   @@map("orders")
 }
@@ -158,6 +163,7 @@ model User {
 
   // Relations
   serviceReports ServiceReport[]
+  assignedOrders Order[]
 
   @@map("users")
 }
@@ -179,11 +185,13 @@ model ServiceReport {
   isPaid            Boolean   @default(false) @map("is_paid")    // Đã trả tiền công
   serviceCost       Float?    @map("service_cost")        // Chi phí dịch vụ
   additionalCost    Float?    @map("additional_cost")     // Chi phí phát sinh
+  orderId           String?   @map("order_id")            // Đơn hàng liên kết
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
   ktvUser           User      @relation(fields: [ktvUserId], references: [id])
+  order             Order?    @relation(fields: [orderId], references: [id])
 
   @@map("service_reports")
 }

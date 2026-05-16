@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchApi } from '../../api/client';
+import { fetchApi, getOrders } from '../../api/client';
 import ImageUploader from '../../components/ImageUploader';
 import { CheckCircle } from 'lucide-react';
 
@@ -25,6 +25,8 @@ export default function ReportForm() {
   const [error, setError] = useState('');
   
   // Form State
+  const [orders, setOrders] = useState<any[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [province, setProvince] = useState('');
@@ -36,6 +38,28 @@ export default function ReportForm() {
   const [additionalCost, setAdditionalCost] = useState('');
   const [notes, setNotes] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    getOrders({ limit: 50, sortBy: 'createdAt', sortOrder: 'desc' })
+      .then(res => setOrders(res.orders))
+      .catch(err => console.error('Lỗi tải đơn hàng', err));
+  }, []);
+
+  const handleOrderSelect = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    if (!orderId) {
+      setCustomerName('');
+      setCustomerPhone('');
+      setProvince('');
+      return;
+    }
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      setCustomerName(order.billFullName || order.customer?.fullName || '');
+      setCustomerPhone(order.billPhoneNumber || order.customer?.phoneNumber || '');
+      setProvince(order.shippingAddress?.province_name || order.customer?.provinceName || '');
+    }
+  };
 
   const handleProductToggle = (prod: string) => {
     if (products.includes(prod)) {
@@ -70,6 +94,7 @@ export default function ReportForm() {
           additionalCost,
           notes,
           imageUrls,
+          orderId: selectedOrderId || undefined,
         })
       });
       navigate('/ktv/my-reports');
@@ -102,6 +127,28 @@ export default function ReportForm() {
         {step === 1 && (
           <div className="animate-fade-in">
             <h3 className="font-bold mb-4 text-lg">1. Thông tin khách hàng</h3>
+            <div className="form-group bg-blue-50/50 p-4 rounded-lg border border-blue-100 mb-6">
+              <label className="form-label text-blue-800 font-semibold mb-2 flex items-center gap-2">
+                📦 Điền tự động từ đơn hàng được giao
+              </label>
+              <select 
+                className="form-select bg-white border-blue-200 focus:border-blue-500 focus:ring-blue-500 text-sm" 
+                value={selectedOrderId} 
+                onChange={(e) => handleOrderSelect(e.target.value)}
+              >
+                <option value="">-- Tự nhập thông tin (Không chọn đơn) --</option>
+                {orders.map(o => {
+                  const name = o.billFullName || o.customer?.fullName || 'Khách';
+                  const addr = o.shippingAddress?.province_name || o.customer?.provinceName || '';
+                  return (
+                    <option key={o.id} value={o.id}>
+                      Đơn #{o.pancakeOrderId} - {name} {addr ? `(${addr})` : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
             <div className="form-group">
               <label className="form-label">Tên khách hàng *</label>
               <input type="text" className="form-input" value={customerName} onChange={e => setCustomerName(e.target.value)} required />

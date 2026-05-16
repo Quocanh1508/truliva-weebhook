@@ -28,6 +28,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       distanceKm,
       serviceCost,
       additionalCost,
+      orderId,
     } = req.body;
 
     // Validation
@@ -54,6 +55,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         distanceKm: distanceKm ? parseFloat(distanceKm) : null,
         serviceCost: serviceCost ? parseFloat(serviceCost) : null,
         additionalCost: additionalCost ? parseFloat(additionalCost) : null,
+        orderId: orderId || null,
       },
       include: {
         ktvUser: { select: { fullName: true } },
@@ -183,7 +185,10 @@ router.get('/export', requireAdmin, async (req: Request, res: Response): Promise
 
     const reports = await prisma.serviceReport.findMany({
       where,
-      include: { ktvUser: { select: { fullName: true } } },
+      include: { 
+        ktvUser: { select: { fullName: true } },
+        order: { select: { pancakeOrderId: true } }
+      },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -194,6 +199,7 @@ router.get('/export', requireAdmin, async (req: Request, res: Response): Promise
       { header: 'Tháng', key: 'month', width: 12 },
       { header: 'Thời gian', key: 'createdAt', width: 20 },
       { header: 'Tên KTV', key: 'ktvName', width: 25 },
+      { header: 'Mã Đơn', key: 'pancakeOrderId', width: 15 },
       { header: 'Tên khách hàng', key: 'customerName', width: 25 },
       { header: 'SĐT khách hàng', key: 'customerPhone', width: 18 },
       { header: 'Tỉnh/TP', key: 'province', width: 20 },
@@ -218,6 +224,7 @@ router.get('/export', requireAdmin, async (req: Request, res: Response): Promise
         month: r.month,
         createdAt: r.createdAt.toLocaleString('vi-VN'),
         ktvName: r.ktvUser.fullName,
+        pancakeOrderId: r.order?.pancakeOrderId || '',
         customerName: r.customerName,
         customerPhone: r.customerPhone,
         province: r.province,

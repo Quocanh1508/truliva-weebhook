@@ -51,3 +51,27 @@ export async function uploadImages(files: File[]): Promise<string[]> {
 
   return data.urls;
 }
+
+export async function getOrders(params: Record<string, any> = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, String(value));
+    }
+  }
+  
+  const queryString = query.toString();
+  const endpoint = queryString ? `/orders?${queryString}` : '/orders';
+  return fetchApi(endpoint);
+}
+
+export async function updateOrder(id: string, data: any) {
+  return fetchApi(`/orders/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getKtvUsers() {
+  return fetchApi('/users/ktvs');
+}

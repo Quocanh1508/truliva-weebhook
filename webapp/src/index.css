@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --primary: #1B3A6B; /* Truliva Navy */
   --primary-light: #2A518E;
